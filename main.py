@@ -11,8 +11,17 @@ end_date = '2026-01-01'
 risk_free_rate = 0.04  # Assuming 4% risk-free rate in 2026
 
 # 2. Download Data
-data = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
-returns = data.pct_change().dropna()
+raw_data = yf.download(tickers, start=start_date, end=end_date)
+# Check if 'Adj Close' exists, otherwise use 'Close'
+if 'Adj Close' in raw_data.columns:
+    data = raw_data['Adj Close']
+else:
+    data = raw_data['Close']
+# If data is empty or all NaN, we stop here
+if data.empty:
+    print("Error: No data found. Check your tickers or internet connection.")
+else:
+    returns = data.pct_change().dropna()
 
 # 3. Basic Calculations
 log_returns = np.log(data / data.shift(1)).dropna()
