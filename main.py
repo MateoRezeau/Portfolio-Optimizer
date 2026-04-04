@@ -10,18 +10,21 @@ start_date = '2021-01-01'
 end_date = '2026-01-01'
 risk_free_rate = 0.04  # Assuming 4% risk-free rate in 2026
 
-# 2. Download Data
-raw_data = yf.download(tickers, start=start_date, end=end_date)
-# Check if 'Adj Close' exists, otherwise use 'Close'
-if 'Adj Close' in raw_data.columns:
+# 2. Download Data (Bulletproof Version)
+raw_data = yf.download(tickers, start=start_date, end=end_date, group_by='column')
+# This is the "Magic Fix": 
+# It selects 'Adj Close' (or 'Close' if Adj isn't available) 
+# and handles the MultiIndex automatically.
+if 'Adj Close' in raw_data.columns.get_level_values(0):
     data = raw_data['Adj Close']
-else:
+elif 'Close' in raw_data.columns.get_level_values(0):
     data = raw_data['Close']
-# If data is empty or all NaN, we stop here
-if data.empty:
-    print("Error: No data found. Check your tickers or internet connection.")
 else:
-    returns = data.pct_change().dropna()
+    # If the above fails, it means the structure is already flat
+    data = raw_data
+# Ensure we only have the tickers we want and drop missing values
+data = data[tickers].dropna()
+print("Data successfully loaded. Shape:", data.shape)
 
 # 3. Basic Calculations
 log_returns = np.log(data / data.shift(1)).dropna()
