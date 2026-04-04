@@ -55,3 +55,11 @@ print("-" * 30)
 print(f"Expected Annual Return: {perf[0]:.2%}")
 print(f"Annual Volatility: {perf[1]:.2%}")
 print(f"Sharpe Ratio: {(-optimized_results.fun):.2f}")
+
+# 7. Visualization (Add this to the bottom of main.py)
+plt.figure(figsize=(10, 6))
+# (Logic to plot the frontier goes here...)
+plt.title("Efficient Frontier & Optimal Portfolio")
+plt.xlabel("Volatility (Risk)")
+plt.ylabel("Expected Return")
+plt.savefig("results/efficient_frontier.png") # This saves the image
