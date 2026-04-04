@@ -75,11 +75,26 @@ if res.success:
     print("="*45)
     
     # Create results table
-    results = pd.DataFrame({'Ticker': final_tickers, 'Weight': res.x})
+    opt_weights = res.x
+    results = pd.DataFrame({'Ticker': final_tickers, 'Weight': opt_weights})
     
     # Find sector for each ticker for the final report
     ticker_to_sector = {t: s for s, t_list in sectors.items() for t in t_list}
     results['Sector'] = results['Ticker'].map(ticker_to_sector)
     
-    # Filter for weights > 0.1% and sort
-    results = results[results['Weight'] > 0.00
+    # THE FIXED LINE: Filter for weights > 0.1% and sort
+    results = results[results['Weight'] > 0.001].sort_values(by='Weight', ascending=False)
+    
+    print(f"{'TICKER':<8} | {'SECTOR':<15} | {'WEIGHT'}")
+    print("-" * 45)
+    for index, row in results.iterrows():
+        print(f"{row['Ticker']:<8} | {row['Sector']:<15} | {row['Weight']:.2%}")
+    
+    p_ret, p_vol = get_metrics(opt_weights)
+    print("-" * 45)
+    print(f"Expected Annual Return: {p_ret:.2%}")
+    print(f"Annual Volatility:     {p_vol:.2%}")
+    print(f"Sharpe Ratio:          {(-res.fun):.2f}")
+    print("="*45)
+else:
+    print(f"Optimizer failed: {res.message}")
