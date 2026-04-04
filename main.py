@@ -10,21 +10,20 @@ start_date = '2021-01-01'
 end_date = '2026-01-01'
 risk_free_rate = 0.04  # Assuming 4% risk-free rate in 2026
 
-# 2. Download Data (Bulletproof Version)
-raw_data = yf.download(tickers, start=start_date, end=end_date, group_by='column')
-# This is the "Magic Fix": 
-# It selects 'Adj Close' (or 'Close' if Adj isn't available) 
-# and handles the MultiIndex automatically.
-if 'Adj Close' in raw_data.columns.get_level_values(0):
-    data = raw_data['Adj Close']
-elif 'Close' in raw_data.columns.get_level_values(0):
-    data = raw_data['Close']
+# 2. Download Data
+raw_data = yf.download(tickers, start=start_date, end=end_date)
+# Handle MultiIndex: If 'Adj Close' is a top-level column, extract it
+if isinstance(raw_data.columns, pd.MultiIndex):
+    if 'Adj Close' in raw_data.columns.levels[0]:
+        data = raw_data['Adj Close']
+    else:
+        data = raw_data['Close']
 else:
-    # If the above fails, it means the structure is already flat
-    data = raw_data
-# Ensure we only have the tickers we want and drop missing values
+    # If it's a standard Index
+    data = raw_data['Adj Close'] if 'Adj Close' in raw_data.columns else raw_data['Close']
+# Ensure we only have our specific tickers and remove any empty rows
 data = data[tickers].dropna()
-print("Data successfully loaded. Shape:", data.shape)
+print(f"Successfully loaded {len(data)} rows of data for {tickers}")
 
 # 3. Basic Calculations
 log_returns = np.log(data / data.shift(1)).dropna()
