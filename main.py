@@ -11,28 +11,23 @@ start_date = '2021-01-01'
 end_date = '2026-01-01'
 risk_free_rate = 0.04 
 
-# 2. Download Data (The "One-by-One" Failsafe)
-print("Starting data download...")
+# 2. Download Data (The "Blind" Failsafe)
 data = pd.DataFrame()
-
+print("Fetching market data...")
 for ticker in tickers:
-    try:
-        # We force auto_adjust=False to get the 'Adj Close' column back
-        df = yf.download(ticker, start=start_date, end=end_date, auto_adjust=False, progress=False)
-        if not df.empty:
-            # We explicitly grab 'Adj Close'. In 2026, single-ticker 
-            # downloads are much more stable than bulk downloads.
-            data[ticker] = df['Adj Close']
-    except Exception as e:
-        print(f"Could not download {ticker}: {e}")
-
+    # We download one by one to avoid the MultiIndex mess
+    df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+    if not df.empty:
+        # EXPLANATION: .iloc[:, 0] means "Take the first column of data" 
+        # regardless of whether its name is 'Close', 'Adj Close', or 'Price'.
+        data[ticker] = df.iloc[:, 0] 
+# Drop any days where data is missing
 data = data.dropna()
-
 if data.empty:
-    print("CRITICAL ERROR: No data was downloaded. Please check your internet connection.")
-    exit()
-
-print(f"Successfully loaded data for: {list(data.columns)}")
+    print("ERROR: Dataframe is empty. Check your internet or tickers.")
+else:
+    print(f"SUCCESS: Data loaded for {list(data.columns)}")
+    print(data.head(2))
 
 # 3. Basic Calculations
 log_returns = np.log(data / data.shift(1)).dropna()
