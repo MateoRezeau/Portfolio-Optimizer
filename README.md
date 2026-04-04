@@ -1,30 +1,27 @@
-# Portfolio
-Python implementation of Modern Portfolio Theory (MPT) to find the efficient frontier and optimized Sharpe Ratio portfolios.
+# S&P 500 Sector-Stratified Portfolio Optimizer
 
-# Mean-Variance Portfolio Optimization (MVO)
+An automated tool that uses **Mean-Variance Optimization (MVO)** to build a diversified portfolio. It selects the top 3 companies from each of the 11 GICS sectors and calculates the optimal weights to maximize the **Sharpe Ratio**.
 
-## Project Overview
-This repository contains a professional-grade Quantitative Finance tool that implements **Modern Portfolio Theory (MPT)**. The engine determines the optimal asset allocation for a given set of equities by analyzing historical risk-adjusted returns.
+## Key Features
+- **Data Sourcing:** Live market data via `yfinance` API.
+- **Risk Management:** Implements a **10% maximum position limit** to ensure institutional-grade diversification.
+- **Optimization:** Uses the `scipy.optimize` (SLSQP) engine to find the highest return-to-risk ratio.
 
-## Mathematical Methodology
-The core of this project is the **Markowitz Optimization** framework. We solve for the weights $w$ that minimize portfolio variance for a target level of expected return:
+## Latest Results (2021 - 2026)
+| Ticker | Sector | Weight |
+| :--- | :--- | :--- |
+| **NVDA** | Technology | 10.00% |
+| **LLY** | Healthcare | 10.00% |
+| **JNJ** | Healthcare | 10.00% |
+| **GE** | Industrials | 10.00% |
+| **DUK** | Utilities | 10.00% |
+| **GOOGL** | Communication | 10.00% |
+| **SO** | Utilities | 10.00% |
+| **XOM** | Energy | 10.00% |
+| **CAT** | Industrials | 7.45% |
+| **KO** | Cons. Staples | 6.20% |
 
-$$\min_{w} \sigma_p^2 = w^T \Sigma w$$
-
-**Key Features:**
-* **Efficient Frontier Mapping:** Visualizing the risk-return trade-off.
-* **Sharpe Ratio Maximization:** Finding the "Tangency Portfolio" using:
-  $$S_p = \frac{E[R_p] - R_f}{\sigma_p}$$
-* **Monte Carlo Simulation:** Generating 10,000+ random portfolios to visualize the feasible set.
-
-## Tech Stack
-* **Language:** Python 3.x
-* **Data Source:** Yahoo Finance API (`yfinance`)
-* **Optimization:** `SciPy.optimize`
-* **Analysis:** `Pandas`, `NumPy`
-* **Visualization:** `Matplotlib`
-
-## How to Run
-1. Clone the repository.
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run the main script: `python main.py`
+**Performance Metrics:**
+- **Expected Annual Return:** 28.93%
+- **Annual Volatility:** 15.00%
+- **Sharpe Ratio:** 1.66
