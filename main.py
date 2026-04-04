@@ -11,19 +11,33 @@ end_date = '2026-01-01'
 risk_free_rate = 0.04  # Assuming 4% risk-free rate in 2026
 
 # 2. Download Data
-# This downloads all data and then "cuts" through the levels to get only what we need.
-raw_data = yf.download(tickers, start=start_date, end=end_date)
-# This single line handles the MultiIndex error:
-# It looks for 'Adj Close' across all tickers, regardless of the table structure.
-if 'Adj Close' in raw_data.columns.get_level_values(0):
-    data = raw_data.xs('Adj Close', axis=1, level=0)
-else:
-    data = raw_data.xs('Close', axis=1, level=0)
-# Clean up: Ensure we only have our tickers and no missing values
-data = data[tickers].dropna()
-print("-" * 30)
-print(f"SYSTEM CHECK: Data successfully extracted for {len(data.columns)} assets.")
-print(data.head(3)) # This proves the table is now "flat" and readable
+try:
+    # 2a. Force 'auto_adjust' to True - this eliminates 'Adj Close' 
+    # and replaces it with 'Close'. 
+    # 'multi_level=False' flattens the table immediately.
+    data = yf.download(tickers, start=start_date, end=end_date, auto_adjust=True, multi_level=False)
+    # 2b. If yfinance still returns a MultiIndex (sometimes happens with specific pandas versions)
+    if isinstance(data.columns, pd.MultiIndex):
+        # We take the first level (the price) and ignore the rest
+        data = data.stack(level=0).reset_index()
+        # Filter for only 'Close' or 'Price'
+        data = data.pivot(index='Date', columns='Ticker', values='Close')
+    # 2c. Final Verification: Check if we have the tickers we need
+    data = data[tickers].dropna()
+    if data.empty:
+        raise ValueError("The dataframe is empty after cleaning.")
+    print("-" * 30)
+    print(f"SUCCESS: Portfolio data loaded for {tickers}")
+    print(data.tail(3))
+except Exception as e:
+    print(f"CRITICAL ERROR during data acquisition: {e}")
+    print("Trying backup download method...")
+    # Manual backup: download one by one
+    data = pd.DataFrame()
+    for t in tickers:
+        data[t] = yf.download(t, start=start_date, end=end_date, auto_adjust=True)['Close']
+    data = data.dropna()
+    print("Backup successful.")
 
 # 3. Basic Calculations
 log_returns = np.log(data / data.shift(1)).dropna()
