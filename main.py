@@ -11,19 +11,15 @@ end_date = '2026-01-01'
 risk_free_rate = 0.04  # Assuming 4% risk-free rate in 2026
 
 # 2. Download Data
-raw_data = yf.download(tickers, start=start_date, end=end_date)
-# Handle MultiIndex: If 'Adj Close' is a top-level column, extract it
-if isinstance(raw_data.columns, pd.MultiIndex):
-    if 'Adj Close' in raw_data.columns.levels[0]:
-        data = raw_data['Adj Close']
-    else:
-        data = raw_data['Close']
+# auto_adjust=True merges 'Adj Close' into 'Close' automatically
+data = yf.download(tickers, start=start_date, end=end_date, auto_adjust=True)['Close']
+# If for some reason 'Close' is missing, check the columns
+if data.empty:
+    print("Error: No data found. Tickers might be delisted or misspelled.")
 else:
-    # If it's a standard Index
-    data = raw_data['Adj Close'] if 'Adj Close' in raw_data.columns else raw_data['Close']
-# Ensure we only have our specific tickers and remove any empty rows
-data = data[tickers].dropna()
-print(f"Successfully loaded {len(data)} rows of data for {tickers}")
+    # Ensure we only have our specific tickers and remove any empty rows
+    data = data.dropna()
+    print(f"Success! Data loaded for: {list(data.columns)}")
 
 # 3. Basic Calculations
 log_returns = np.log(data / data.shift(1)).dropna()
