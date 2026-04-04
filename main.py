@@ -11,15 +11,19 @@ end_date = '2026-01-01'
 risk_free_rate = 0.04  # Assuming 4% risk-free rate in 2026
 
 # 2. Download Data
-# auto_adjust=True merges 'Adj Close' into 'Close' automatically
-data = yf.download(tickers, start=start_date, end=end_date, auto_adjust=True)['Close']
-# If for some reason 'Close' is missing, check the columns
-if data.empty:
-    print("Error: No data found. Tickers might be delisted or misspelled.")
+# This downloads all data and then "cuts" through the levels to get only what we need.
+raw_data = yf.download(tickers, start=start_date, end=end_date)
+# This single line handles the MultiIndex error:
+# It looks for 'Adj Close' across all tickers, regardless of the table structure.
+if 'Adj Close' in raw_data.columns.get_level_values(0):
+    data = raw_data.xs('Adj Close', axis=1, level=0)
 else:
-    # Ensure we only have our specific tickers and remove any empty rows
-    data = data.dropna()
-    print(f"Success! Data loaded for: {list(data.columns)}")
+    data = raw_data.xs('Close', axis=1, level=0)
+# Clean up: Ensure we only have our tickers and no missing values
+data = data[tickers].dropna()
+print("-" * 30)
+print(f"SYSTEM CHECK: Data successfully extracted for {len(data.columns)} assets.")
+print(data.head(3)) # This proves the table is now "flat" and readable
 
 # 3. Basic Calculations
 log_returns = np.log(data / data.shift(1)).dropna()
