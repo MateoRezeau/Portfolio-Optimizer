@@ -19,7 +19,7 @@ sectors = {
     "Materials": ["LIN", "SHW", "APD"]
 }
 
-# Flatten the dictionary into a simple list
+# Flatten the dictionary into a list for downloading
 tickers = [ticker for sublist in sectors.values() for ticker in sublist]
 
 # 2. Downloading Data
@@ -30,18 +30,21 @@ raw_data = pd.DataFrame()
 
 for t in tickers:
     try:
-        # Using the .iloc[:, 0] trick to avoid naming errors
+        # auto_adjust=True handles dividends and stock splits
         df = yf.download(t, start=start_date, end=end_date, auto_adjust=True, progress=False)
         if not df.empty:
+            # iloc[:, 0] ensures we grab the price regardless of column naming
             raw_data[t] = df.iloc[:, 0]
-    except:
+    except Exception as e:
+        print(f"Could not download {t}: {e}")
         continue
 
+# Clean the data (remove any stocks that failed to download)
 data = raw_data.dropna(axis=1, how='all').dropna()
 final_tickers = data.columns.tolist()
 print(f"Successfully loaded {len(final_tickers)} tickers.")
 
-# 3. Calculations
+# 3. Risk/Return Calculations
 returns = data.pct_change().dropna()
 mean_returns = returns.mean() * 252
 cov_matrix = returns.cov() * 252
@@ -54,47 +57,4 @@ def get_metrics(w):
 
 def min_obj_sharpe(w):
     p_ret, p_vol = get_metrics(w)
-    return -(p_ret - 0.04) / p_vol # 4% Risk-Free Rate
-
-# 5. Optimizer Configuration
-# Constraint: Weights must sum to 100%
-constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-
-# Bounds: No short selling (0) and Max 10% per stock for safety
-bounds = tuple((0, 0.10) for _ in range(len(final_tickers)))
-
-initial_guess = [1. / len(final_tickers)] * len(final_tickers)
-
-# 6. Run Optimizer
-print("\nStep 2: Solving for Optimal Weights (Max 10% per asset)...")
-res = minimize(min_obj_sharpe, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-
-if res.success:
-    print("\n" + "="*45)
-    print("      DIVERSIFIED SECTOR OPTIMAL PORTFOLIO")
-    print("="*45)
-    
-    # Create results table
-    opt_weights = res.x
-    results = pd.DataFrame({'Ticker': final_tickers, 'Weight': opt_weights})
-    
-    # Find sector for each ticker for the final report
-    ticker_to_sector = {t: s for s, t_list in sectors.items() for t in t_list}
-    results['Sector'] = results['Ticker'].map(ticker_to_sector)
-    
-    # THE FIXED LINE: Filter for weights > 0.1% and sort
-    results = results[results['Weight'] > 0.001].sort_values(by='Weight', ascending=False)
-    
-    print(f"{'TICKER':<8} | {'SECTOR':<15} | {'WEIGHT'}")
-    print("-" * 45)
-    for index, row in results.iterrows():
-        print(f"{row['Ticker']:<8} | {row['Sector']:<15} | {row['Weight']:.2%}")
-    
-    p_ret, p_vol = get_metrics(opt_weights)
-    print("-" * 45)
-    print(f"Expected Annual Return: {p_ret:.2%}")
-    print(f"Annual Volatility:     {p_vol:.2%}")
-    print(f"Sharpe Ratio:          {(-res.fun):.2f}")
-    print("="*45)
-else:
-    print(f"Optimizer failed: {res.message}")
+    # Using 4% as a proxy for the risk-free
