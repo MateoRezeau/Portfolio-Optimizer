@@ -1,14 +1,18 @@
 # S&P 500 Sector-Stratified Portfolio Optimizer
 
-An automated tool that uses **Mean-Variance Optimization (MVO)** to build a diversified portfolio. It selects the top 3 companies from each of the 11 GICS sectors and calculates the optimal weights to maximize the **Sharpe Ratio**.
+## Project Overview
+This project implements a **Mean-Variance Optimization (MVO)** model to build a diversified "Proxy Portfolio" of the S&P 500. Instead of a random selection, the algorithm targets the **top 3 market-cap leaders from each of the 11 GICS sectors**, ensuring the portfolio remains balanced across the entire US economy.
 
-## Key Features
-- **Data Sourcing:** Live market data via `yfinance` API.
-- **Risk Management:** Implements a **10% maximum position limit** to ensure institutional-grade diversification.
-- **Optimization:** Uses the `scipy.optimize` (SLSQP) engine to find the highest return-to-risk ratio.
+## Technical Features
+- **Data Engine:** Integrated with `yfinance` to pull 5 years of historical adjusted closing prices.
+- **Optimization Strategy:** Maximizes the **Sharpe Ratio** (Risk-adjusted return) using the `SLSQP` algorithm.
+- **Institutional Constraints:** Enforces a **10.00% maximum weight** per asset to prevent single-stock concentration risk.
+- **Error Handling:** Robust processing to handle API timeouts and missing ticker data.
 
-## Latest Results (2021 - 2026)
-| Ticker | Sector | Weight |
+## Performance Results (2021 - 2026)
+The model identified the following optimal allocation to maximize returns while maintaining a 15% volatility target:
+
+| TICKER | SECTOR | WEIGHT |
 | :--- | :--- | :--- |
 | **NVDA** | Technology | 10.00% |
 | **LLY** | Healthcare | 10.00% |
@@ -20,8 +24,14 @@ An automated tool that uses **Mean-Variance Optimization (MVO)** to build a dive
 | **XOM** | Energy | 10.00% |
 | **CAT** | Industrials | 7.45% |
 | **KO** | Cons. Staples | 6.20% |
+| **JPM** | Financials | 5.25% |
 
-**Performance Metrics:**
+### Key Metrics:
 - **Expected Annual Return:** 28.93%
-- **Annual Volatility:** 15.00%
+- **Annual Volatility (Risk):** 15.00%
 - **Sharpe Ratio:** 1.66
+
+## Installation & Usage
+1. Clone the repo: `git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git`
+2. Install dependencies: `pip install numpy pandas yfinance scipy`
+3. Run the optimizer: `python main.py`
