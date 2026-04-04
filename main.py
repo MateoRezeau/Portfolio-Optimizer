@@ -1,84 +1,45 @@
 import numpy as np
 import pandas as pd
 import yfinance as yf
-import matplotlib.pyplot as plt
 from scipy.optimize import minimize
-import os
 
-# 1. Configuration
+# 1. Setup
 tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'JPM']
 start_date = '2021-01-01'
 end_date = '2026-01-01'
-risk_free_rate = 0.04 
 
-# 2. Download Data (The "Blind" Failsafe)
-data = pd.DataFrame()
-print("Fetching market data...")
-for ticker in tickers:
-    # We download one by one to avoid the MultiIndex mess
-    df = yf.download(ticker, start=start_date, end=end_date, progress=False)
-    if not df.empty:
-        # EXPLANATION: .iloc[:, 0] means "Take the first column of data" 
-        # regardless of whether its name is 'Close', 'Adj Close', or 'Price'.
-        data[ticker] = df.iloc[:, 0] 
-# Drop any days where data is missing
-data = data.dropna()
-if data.empty:
-    print("ERROR: Dataframe is empty. Check your internet or tickers.")
+# 2. Download - THE NEW WAY
+print("Downloading data...")
+# We use auto_adjust=True so 'Adj Close' is merged into 'Close'
+raw = yf.download(tickers, start=start_date, end=end_date, auto_adjust=True)
+
+# If yfinance gives a MultiIndex, we extract the 'Close' level
+if isinstance(raw.columns, pd.MultiIndex):
+    data = raw['Close']
 else:
-    print(f"SUCCESS: Data loaded for {list(data.columns)}")
-    print(data.head(2))
+    data = raw
 
-# 3. Basic Calculations
-log_returns = np.log(data / data.shift(1)).dropna()
-cov_matrix = log_returns.cov() * 252
-mean_returns = log_returns.mean() * 252
+data = data[tickers].dropna()
+print(f"Success! Data for {len(data.columns)} stocks loaded.")
 
-# 4. Optimization Functions
-def portfolio_performance(weights, mean_returns, cov_matrix):
-    returns = np.sum(mean_returns * weights)
-    std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
-    return returns, std
+# 3. Simple MVO Logic
+returns = data.pct_change().dropna()
+mean_ret = returns.mean() * 252
+cov_mat = returns.cov() * 252
 
-def negative_sharpe_ratio(weights, mean_returns, cov_matrix, risk_free_rate):
-    p_returns, p_std = portfolio_performance(weights, mean_returns, cov_matrix)
-    return -(p_returns - risk_free_rate) / p_std
+def get_perf(w):
+    p_ret = np.sum(mean_ret * w)
+    p_vol = np.sqrt(np.dot(w.T, np.dot(cov_mat, w)))
+    return p_ret, p_vol
 
-# 5. The Optimizer
-constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-bounds = tuple((0, 1) for asset in range(len(tickers)))
-initial_guess = len(tickers) * [1. / len(tickers)]
+def min_func_sharpe(w):
+    p_ret, p_vol = get_perf(w)
+    return -(p_ret - 0.04) / p_vol
 
-optimized_results = minimize(
-    negative_sharpe_ratio, 
-    initial_guess, 
-    args=(mean_returns, cov_matrix, risk_free_rate),
-    method='SLSQP', 
-    bounds=bounds, 
-    constraints=constraints
-)
+cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+bnds = tuple((0, 1) for _ in range(len(tickers)))
+res = minimize(min_func_sharpe, [1./6]*6, method='SLSQP', bounds=bnds, constraints=cons)
 
-# 6. Results Output
-optimal_weights = optimized_results.x
-perf = portfolio_performance(optimal_weights, mean_returns, cov_matrix)
-
-print("\n" + "="*30)
-print("OPTIMIZED PORTFOLIO WEIGHTS")
-print("="*30)
-for i, ticker in enumerate(tickers):
-    print(f"{ticker:7}: {optimal_weights[i]:.2%}")
-print("-" * 30)
-print(f"Expected Return: {perf[0]:.2%}")
-print(f"Annual Risk:    {perf[1]:.2%}")
-print(f"Sharpe Ratio:   {(-optimized_results.fun):.2f}")
-
-# 7. Visualization
-if not os.path.exists('results'):
-    os.makedirs('results')
-
-plt.figure(figsize=(10, 6))
-plt.bar(tickers, optimal_weights, color='skyblue')
-plt.title("Optimal Asset Allocation")
-plt.ylabel("Weighting")
-plt.savefig("results/allocation.png")
-print("\nSuccess! Chart saved to results/allocation.png")
+print("\n--- OPTIMAL WEIGHTS ---")
+for i, t in enumerate(tickers):
+    print(f"{t}: {res.x[i]:.2%}")
