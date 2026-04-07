@@ -6,7 +6,7 @@ This project implements a **Mean-Variance Optimization (MVO)** model to build a 
 ## Technical Features
 - **Data Engine:** Integrated with `yfinance` to pull 5 years of historical adjusted closing prices.
 - **Optimization Strategy:** Maximizes the **Sharpe Ratio** (Risk-adjusted return) using the `SLSQP` algorithm.
-- **Institutional Constraints:** Enforces a **10.00% maximum weight** per asset to prevent single-stock concentration risk.
+- **Institutional Constraints:** Enforces a **10.00% maximum weight** per asset to prevent single-stock concentration risk and improve diversification.
 - **Error Handling:** Robust processing to handle API timeouts and missing ticker data.
 
 ## Performance Results (2021 - 2026)
