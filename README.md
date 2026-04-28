@@ -10,7 +10,7 @@ This project implements a Mean-Variance Optimization (MVO) model to build a dive
 - **Error Handling:** Robust processing to handle API timeouts and missing ticker data.
 
 ## Performance Results (2021 - 2026)
-As of 27/04/2026, the model identified the following optimal allocation to maximize returns while maintaining a 15% volatility target:
+As of 28/04/2026, the model identified the following optimal allocation to maximize returns while maintaining a 15% volatility target:
 
 | TICKER | SECTOR | WEIGHT |
 | :--- | :--- | :--- |
